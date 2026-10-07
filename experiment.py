@@ -1,10 +1,3 @@
-"""實驗：產生報告中所有表格與圖片，結果存到 results/。
-
-實驗 1：選擇分群數 K（Elbow Method＋Silhouette Score）
-實驗 2：不同 K 值下，K-means 搜尋與全量搜尋的「速度 vs 準確度」比較
-實驗 3：特徵消融（Ablation），觀察各特徵對推薦品質的影響
-實驗 4：範例歌曲的推薦結果
-"""
 import os
 import time
 
@@ -17,8 +10,8 @@ from sklearn.metrics import silhouette_score
 from recommender import (FEATURES_4, FEATURES_8, KMeansRecommender, find_song,
                          load_songs, recommend_exact, scale_features)
 
-TOP_N = 5            # 每次推薦幾首
-N_QUERIES = 300      # 隨機抽幾首歌當測試歌曲
+TOP_N = 5
+N_QUERIES = 300
 SEED = 0
 os.makedirs("results", exist_ok=True)
 
@@ -30,15 +23,13 @@ print(f"清理後歌曲數：{len(songs)}，測試歌曲數：{N_QUERIES}")
 
 
 def genre_precision(target, rec_idx):
-    """推薦歌曲中，與目標歌曲有共同曲風的比例。"""
     g = songs.at[target, "genres"]
     return np.mean([len(g & songs.at[i, "genres"]) > 0 for i in rec_idx])
 
 
-# ---------- 實驗 1：選擇 K ----------
 ks = range(2, 11)
 inertia, silhouette = [], []
-sample = rng.choice(len(X), 10000, replace=False)  # Silhouette 計算量大，抽樣 10000 首
+sample = rng.choice(len(X), 10000, replace=False)  
 for k in ks:
     model = KMeans(n_clusters=k, random_state=42, n_init=10).fit(X)
     inertia.append(model.inertia_)
@@ -60,9 +51,7 @@ fig.tight_layout()
 fig.savefig("results/fig_choose_k.png", dpi=150)
 plt.close(fig)
 
-# ---------- 實驗 2：速度 vs 準確度 ----------
 def evaluate(recommend):
-    """對所有測試歌曲執行推薦，回傳平均 Genre Precision、平均查詢時間與推薦結果。"""
     precisions, times, results = [], [], []
     for q in queries:
         start = time.perf_counter()
@@ -104,7 +93,6 @@ fig.tight_layout()
 fig.savefig("results/fig_speed_vs_accuracy.png", dpi=150)
 plt.close(fig)
 
-# ---------- 實驗 3：特徵消融 ----------
 def precision_with(features):
     Xf = scale_features(songs, features)
     return np.mean([genre_precision(q, recommend_exact(Xf, q, TOP_N)[0]) for q in queries])
@@ -122,7 +110,6 @@ exp3 = pd.DataFrame(rows)
 exp3.to_csv("results/exp3_ablation.csv", index=False)
 print("\n[實驗 3] 特徵消融（Baseline 全量搜尋）\n", exp3.round(3).to_string(index=False))
 
-# ---------- 實驗 4：範例歌曲 ----------
 km3 = KMeansRecommender(X, 3)
 rows = []
 for title, artist in [("Can't Help Falling in Love", "Kina Grannis"), ("Someone You Loved", "Lewis Capaldi")]:
